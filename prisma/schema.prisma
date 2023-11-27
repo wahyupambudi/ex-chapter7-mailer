@@ -10,6 +10,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum role {
+  member
+  admin
+}
 
 model users {
   id                Int      @id @default(autoincrement())
@@ -20,6 +24,7 @@ model users {
   dob               DateTime @db.Date
   profile_picture   String
   is_verified       Boolean  @default(false)
+  role               role @default(member) // You can change this to an enum if needed
   createdAt DateTime @db.Timestamptz  @default(now())
   updatedAt DateTime  @db.Timestamptz @default(now())
   deletedAt DateTime? @db.Timestamptz

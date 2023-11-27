@@ -10,8 +10,16 @@ require("dotenv").config();
 const listTokens = [];
 
 async function Register(req, res, next) {
-    const { id, email, password, name, umur, dob, profile_picture, is_verified } =
-        req.body;
+    const {
+        id,
+        email,
+        password,
+        name,
+        umur,
+        dob,
+        profile_picture,
+        is_verified,
+    } = req.body;
 
     const hashPass = await HashPassword(password);
 
@@ -62,9 +70,10 @@ async function Register(req, res, next) {
             },
         });
 
-
-        const path = "/api/v1/auth/verify"
-        const fullUrl = `${req.protocol}://${req.get('host')}${path}/${email}?is_verified=true`;
+        const path = "/api/v1/auth/verify";
+        const fullUrl = `${req.protocol}://${req.get(
+            "host",
+        )}${path}/${email}?is_verified=true`;
         // console.log(fullUrl)
 
         // async..await is not allowed in global scope, must use a wrapper
@@ -72,7 +81,7 @@ async function Register(req, res, next) {
             // send mail with defined transport object
             const info = await transporter.sendMail({
                 from: process.env.MAIL_SMTP, // sender address
-                to: "wahyupambudi823@gmail.com", // list of receivers
+                to: `${email}`, // list of receivers
                 subject: "User Created | Please Verify ✔", // Subject line
                 html: `<b>Please Verify with link bellow!</b> <p><a href='${fullUrl}'>Click Here For Verify!</a></p>`, // html body
             });
@@ -136,78 +145,79 @@ async function Login(req, res, next) {
 }
 
 async function Verify(req, res) {
-  const { is_verified } = req.query;
-  // console.log(status)
+    const { is_verified } = req.query;
+    const { email } = req.params;
 
-  const emailUser = await getUserFromToken(req.headers, process.env.SECRET_KEY);
-  // console.log(usersId)
+    const payload = {};
 
-  const payload = {};
+    if (!is_verified) {
+        let resp = ResponseTemplate(null, "bad request", null, 400);
+        res.json(resp);
+        return;
+    }
 
-  if (!is_verified) {
-    let resp = ResponseTemplate(null, "bad request", null, 400);
-    res.json(resp);
-    return;
-  }
+    if (is_verified) {
+        payload.is_verified = Boolean(is_verified);
+    }
 
-  if (is_verified) {
-    payload.is_verified = Boolean(is_verified);
-  }
+    try {
+        const users = await prisma.users.update({
+            where: {
+                email: String(email),
+            },
+            data: payload,
+        });
 
-  try {
-    const users = await prisma.users.update({
-      where: {
-        email: String(emailUser.email),
-      },
-      data: payload,
-    });
-
-    let resp = ResponseTemplate(users.is_verified, "success", null, 200);
-    res.json(resp);
-    return;
-  } catch (error) {
-    console.log(error);
-    let resp = ResponseTemplate(null, "internal server error", error, 500);
-    res.json(resp);
-    return;
-  }
+        let resp = ResponseTemplate(users.is_verified, "success", null, 200);
+        res.json(resp);
+        return;
+    } catch (error) {
+        console.log(error);
+        let resp = ResponseTemplate(null, "internal server error", error, 500);
+        res.json(resp);
+        return;
+    }
 }
 
 async function Update(req, res) {
-  const { profile_picture } = req.body;
-  const { userId } = req.params;
+    const { profile_picture } = req.body;
+    const updatedAt = new Date();
+    const { id } = req.params;
 
-  const payload = {};
+    const payload = {};
 
-  if (!profile_picture) {
-    let resp = ResponseTemplate(null, "bad request", null, 400);
-    res.json(resp);
-    return;
+    if (!profile_picture) {
+        let resp = ResponseTemplate(null, "bad request", null, 400);
+        res.json(resp);
+        return;
+    }
+
+    if (profile_picture) {
+        payload.profile_picture = profile_picture;
+    }
+
+      if (updatedAt) {
+    payload.updatedAt = updatedAt;
   }
 
-  if (profile_picture) {
-    payload.profile_picture = profile_picture;
-  }
+    try {
+        const users = await prisma.users.update({
+            where: {
+                id: Number(id),
+            },
+            data: payload,
+        });
 
-  try {
-    const users = await prisma.users.update({
-      where: {
-        id: Number(userId),
-      },
-      data: payload,
-    });
-
-    let resp = ResponseTemplate(users, "success", null, 200);
-    res.json(resp);
-    return;
-  } catch (error) {
-    // console.log(error);
-    let resp = ResponseTemplate(null, "internal server error", error, 500);
-    res.json(resp);
-    return;
-  }
+        let resp = ResponseTemplate(users, "success", null, 200);
+        res.json(resp);
+        return;
+    } catch (error) {
+        console.log(error);
+        let resp = ResponseTemplate(null, "internal server error", error, 500);
+        res.json(resp);
+        return;
+    }
 }
-
 
 function whoami(req, res) {
     // console.log(`listTokens dari whoami ${listTokens}`)
