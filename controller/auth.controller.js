@@ -148,6 +148,32 @@ async function Verify(req, res) {
     const { is_verified } = req.query;
     const { email } = req.params;
 
+    const user = await prisma.users.findUnique({
+        where: {
+            email: email,
+        },
+    });
+
+    if (!user) {
+        let respons = ResponseTemplate(
+            null,
+            "bad request",
+            "user not found",
+            400,
+        );
+        res.status(400).json(respons);
+        return;
+    } else if (user.is_verified) {
+        let respons = ResponseTemplate(
+            user.is_verified,
+            "The user has been verified",
+            "null",
+            200,
+        );
+        res.status(200).json(respons);
+        return;
+    }
+
     const payload = {};
 
     if (!is_verified) {
@@ -168,7 +194,7 @@ async function Verify(req, res) {
             data: payload,
         });
 
-        let resp = ResponseTemplate(users.is_verified, "success", null, 200);
+        let resp = ResponseTemplate(users.is_verified, "success verified user", null, 200);
         res.json(resp);
         return;
     } catch (error) {
@@ -196,9 +222,9 @@ async function Update(req, res) {
         payload.profile_picture = profile_picture;
     }
 
-      if (updatedAt) {
-    payload.updatedAt = updatedAt;
-  }
+    if (updatedAt) {
+        payload.updatedAt = updatedAt;
+    }
 
     try {
         const users = await prisma.users.update({
@@ -218,6 +244,8 @@ async function Update(req, res) {
         return;
     }
 }
+
+async function admin(req, res) {}
 
 function whoami(req, res) {
     // console.log(`listTokens dari whoami ${listTokens}`)

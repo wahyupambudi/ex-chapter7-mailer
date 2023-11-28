@@ -11,7 +11,7 @@ router.get("/whoami", Authenticate, checkTokenBlacklist, whoami);
 
 router.post("/logout", Authenticate, logout);
 
-router.put("/verify/:email",  Verify);
+router.get("/verify/:email",  Verify);
 
 router.put("/:id", Update);
 
